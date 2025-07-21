@@ -13,9 +13,14 @@ app.use(cors({
 }))
 app.use(express.json());
 app.use(express.static("public"));
-app.use(express.urlencoded({ extended: true, limit: "16kb" }));
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // Routes will go here later
+import propertyRoutes from './routes/property.routes.js';
+// other imports...
+
+// Routes
+app.use('/api/v1/property', propertyRoutes);
 
 export default app;

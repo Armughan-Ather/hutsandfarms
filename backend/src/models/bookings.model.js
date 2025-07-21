@@ -5,6 +5,7 @@ export default (sequelize, DataTypes) => {
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
+    user_phone_number: DataTypes.STRING,
     user_id: {
       type: DataTypes.UUID,
       allowNull: false,
@@ -34,7 +35,6 @@ export default (sequelize, DataTypes) => {
       defaultValue: 'Pending',
     },
     booked_at: DataTypes.DATE,
-    created_by: DataTypes.UUID,
     created_at: DataTypes.DATE,
     updated_at: DataTypes.DATE,
   }, {

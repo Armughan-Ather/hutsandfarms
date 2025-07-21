@@ -12,6 +12,7 @@ export default (sequelize, DataTypes) => {
     base_price_day_shift: DataTypes.DECIMAL(10, 2),
     base_price_night_shift: DataTypes.DECIMAL(10, 2),
     base_price_full_day: DataTypes.DECIMAL(10, 2),
+    weekend_multiplier: DataTypes.DECIMAL(10, 2),
     season_start_date: DataTypes.DATE,
     season_end_date: DataTypes.DATE,
     special_offer_note: DataTypes.TEXT,
