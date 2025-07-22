@@ -1,23 +1,9 @@
 import express from 'express';
-import { imageUpload, videoUpload } from '../middlewares/upload.js';
-import { debugUploadFields } from '../middlewares/debugLogger.js';
-import { createPropertyWithMedia } from '../controllers/property.controller.js';
-
+// import { imageUpload, videoUpload } from '../middlewares/upload.js';
+// import { debugUploadFields } from '../middlewares/debugLogger.js';
+import { addProperty } from '../controllers/property.controller.js';
+import  uploadFiles  from '../middlewares/upload.js';
 const router = express.Router();
 
-router.post(
-  '/create',
-  debugUploadFields, // ✅ Custom logging middleware
-  (req, res, next) => {
-    imageUpload.array('images', 10)(req, res, function (err) {
-      if (err) return next(err);
-      videoUpload.array('videos', 5)(req, res, function (err) {
-        if (err) return next(err);
-        next();
-      });
-    });
-  },
-  createPropertyWithMedia
-);
-
+router.post('/add', uploadFiles, addProperty);
 export default router;

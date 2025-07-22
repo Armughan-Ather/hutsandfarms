@@ -18,9 +18,9 @@ app.use(cookieParser());
 
 // Routes will go here later
 import propertyRoutes from './routes/property.routes.js';
-// other imports...
-
+import ownerRoutes from './routes/owner.routes.js';
 // Routes
-app.use('/api/v1/property', propertyRoutes);
+app.use('/api/properties', propertyRoutes);
+app.use('/api/owners', ownerRoutes);
 
 export default app;
