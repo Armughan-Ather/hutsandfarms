@@ -39,7 +39,7 @@ db.Sequelize = Sequelize;
 
 db.Property = PropertyModel(sequelize, DataTypes);
 db.PropertyAmenity = PropertyAmenityModel(sequelize, DataTypes);
-db.PropertyPricing = PropertyPricingModel(sequelize, DataTypes); // Renamed from Pricing
+db.PropertyPricing = PropertyPricingModel(sequelize, DataTypes);
 db.PropertyImage = PropertyImageModel(sequelize, DataTypes);
 db.PropertyVideo = PropertyVideoModel(sequelize, DataTypes);
 db.User = UserModel(sequelize, DataTypes);
