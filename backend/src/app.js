@@ -20,9 +20,11 @@ app.use(cookieParser());
 import propertyRoutes from './routes/property.routes.js';
 import ownerRoutes from './routes/owner.routes.js';
 import userRoutes from './routes/user.routes.js';
+import bookingRoutes from './routes/booking.routes.js';
 // Routes
 app.use('/api/properties', propertyRoutes);
 app.use('/api/owners', ownerRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/bookings', bookingRoutes);
 
 export default app;
