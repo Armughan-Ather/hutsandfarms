@@ -1,4 +1,3 @@
-
 export default {
   USER: process.env.DB_USER,
   PASSWORD: process.env.DB_PASSWORD,
@@ -10,6 +9,12 @@ export default {
     max: 5,
     min: 0,
     acquire: 30000,
-    idle: 10000
-  }
+    idle: 10000,
+  },
+  dialectOptions: {
+    ssl: {
+      require: true,
+      rejectUnauthorized: false, // Required for NeonDB
+    },
+  },
 };
