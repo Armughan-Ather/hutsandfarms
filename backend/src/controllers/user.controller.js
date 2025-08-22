@@ -8,12 +8,18 @@ const { User, sequelize } = db;
 export const register = async (req, res) => {
   const transaction = await sequelize.transaction();
   try {
-    const { first_name, last_name, email, phone_number, password } = req.body;
+    const { name, email, phone_number, password, cnic } = req.body;
 
     // Validate required fields
-    if (!email || !password) {
+    if (!email || !phone_number || !password) {
       await transaction.rollback();
-      return res.status(400).json({ error: 'Missing required fields: email, password' });
+      return res.status(400).json({ error: 'Missing required fields: email, phone_number, password' });
+    }
+
+    // Validate CNIC format (if provided)
+    if (cnic && !/^\d{13}$/.test(cnic)) {
+      await transaction.rollback();
+      return res.status(400).json({ error: 'Invalid CNIC: must be exactly 13 digits' });
     }
 
     // Check if email already exists
@@ -23,16 +29,25 @@ export const register = async (req, res) => {
       return res.status(400).json({ error: 'Email already registered' });
     }
 
+    // Check if CNIC already exists (if provided and unique constraint exists)
+    if (cnic) {
+      const existingCnic = await User.findOne({ where: { cnic }, transaction });
+      if (existingCnic) {
+        await transaction.rollback();
+        return res.status(400).json({ error: 'CNIC already registered' });
+      }
+    }
+
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create user
     const user = await User.create({
-      first_name,
-      last_name,
+      name,
       email,
       phone_number,
       password: hashedPassword,
+      cnic,
       created_at: new Date(),
     }, { transaction });
 
@@ -43,10 +58,10 @@ export const register = async (req, res) => {
       message: 'User registered successfully',
       user: {
         user_id: user.user_id,
-        first_name: user.first_name,
-        last_name: user.last_name,
+        name: user.name,
         email: user.email,
         phone_number: user.phone_number,
+        cnic: user.cnic,
         created_at: user.created_at,
       },
     });
@@ -89,7 +104,7 @@ export const login = async (req, res) => {
     const token = jwt.sign(
       { user_id: user.user_id, email: user.email },
       process.env.JWT_SECRET,
-      { expiresIn: '1d' } // Token expires in 1 hour
+      { expiresIn: '1d' }
     );
 
     // Return response
@@ -97,10 +112,10 @@ export const login = async (req, res) => {
       message: 'Login successful',
       user: {
         user_id: user.user_id,
-        first_name: user.first_name,
-        last_name: user.last_name,
+        name: user.name,
         email: user.email,
         phone_number: user.phone_number,
+        cnic: user.cnic,
         created_at: user.created_at,
       },
       token,
