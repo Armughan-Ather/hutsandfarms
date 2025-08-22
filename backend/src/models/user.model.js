@@ -53,6 +53,10 @@ export default (sequelize) => {
     password: {
       type: DataTypes.TEXT,
     },
+    cnic: {
+      type: DataTypes.STRING(13),
+      allowNull: true,
+    },
     created_at: {
       type: DataTypes.DATE,
     },

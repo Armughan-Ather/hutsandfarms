@@ -110,6 +110,10 @@ export default (sequelize) => {
       type: 'enum_properties_type', // Matches database ENUM name
       allowNull: false,
     },
+    advance_percentage: {
+      type: DataTypes.DECIMAL(5, 2),
+      allowNull: true,
+    },
     created_at: {
       type: DataTypes.DATE,
       allowNull: true,
