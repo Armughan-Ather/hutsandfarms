@@ -52,6 +52,11 @@ const Bookings = () => {
     window.location.href = '/dashboard';
   };
 
+  const handleAddNewBooking = () => {
+    // TODO: Implement add new booking functionality
+    alert('Add New Booking functionality will be implemented here!');
+  };
+
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
       case 'confirmed':
@@ -107,9 +112,9 @@ const Bookings = () => {
 
   if (loading) {
     return (
-      <div className="bookings-page-loading">
-        <div className="loading-spinner">
-          <div className="spinner"></div>
+      <div className="booking-page-loading">
+        <div className="booking-page-loading-spinner">
+          <div className="booking-page-spinner"></div>
           <span>Loading bookings...</span>
         </div>
       </div>
@@ -118,11 +123,11 @@ const Bookings = () => {
 
   if (error) {
     return (
-      <div className="bookings-page-error">
-        <div className="error-container">
+      <div className="booking-page-error">
+        <div className="booking-page-error-container">
           <h2>Error</h2>
           <p>{error}</p>
-          <button onClick={() => window.location.reload()} className="retry-button">
+          <button onClick={() => window.location.reload()} className="booking-page-retry-button">
             Try Again
           </button>
         </div>
@@ -131,16 +136,19 @@ const Bookings = () => {
   }
 
   return (
-    <div className="bookings-page-container">
+    <div className="booking-page-container">
       {/* Header */}
-      <div className="bookings-page-header">
-        <div className="header-content">
-          <div className="header-left">
-            <h1 className="page-title">Property Bookings</h1>
-            <p className="page-subtitle">Manage and view all your property bookings</p>
+      <div className="booking-page-header">
+        <div className="booking-page-header-content">
+          <div className="booking-page-header-left">
+            <h1 className="booking-page-page-title">Property Bookings</h1>
+            <p className="booking-page-page-subtitle">Manage and view all your property bookings</p>
           </div>
-          <div className="header-right">
-            <button onClick={handleBackToDashboard} className="back-button">
+          <div className="booking-page-header-right">
+            <button onClick={handleAddNewBooking} className="booking-page-add-booking-button">
+              ➕ Add New Booking
+            </button>
+            <button onClick={handleBackToDashboard} className="booking-page-back-button">
               ← Back to Dashboard
             </button>
           </div>
@@ -148,55 +156,55 @@ const Bookings = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="bookings-page-stats">
-        <div className="stats-grid">
-          <div className="stat-card">
-            <div className="stat-number">{bookings.length}</div>
-            <div className="stat-label">Total Bookings</div>
+      <div className="booking-page-stats">
+        <div className="booking-page-stats-grid">
+          <div className="booking-page-stat-card">
+            <div className="booking-page-stat-number">{bookings.length}</div>
+            <div className="booking-page-stat-label">Total Bookings</div>
           </div>
-          <div className="stat-card">
-            <div className="stat-number">
+          <div className="booking-page-stat-card">
+            <div className="booking-page-stat-number">
               {bookings.filter(b => b.status?.toLowerCase() === 'confirmed').length}
             </div>
-            <div className="stat-label">Confirmed</div>
+            <div className="booking-page-stat-label">Confirmed</div>
           </div>
-          <div className="stat-card">
-            <div className="stat-number">
+          <div className="booking-page-stat-card">
+            <div className="booking-page-stat-number">
               {bookings.filter(b => b.status?.toLowerCase() === 'pending').length}
             </div>
-            <div className="stat-label">Pending</div>
+            <div className="booking-page-stat-label">Pending</div>
           </div>
-          <div className="stat-card">
-            <div className="stat-number">
+          <div className="booking-page-stat-card">
+            <div className="booking-page-stat-number">
               {bookings.filter(b => b.status?.toLowerCase() === 'cancelled').length}
             </div>
-            <div className="stat-label">Cancelled</div>
+            <div className="booking-page-stat-label">Cancelled</div>
           </div>
         </div>
       </div>
 
       {/* Filter Tabs */}
-      <div className="bookings-page-tabs">
+      <div className="booking-page-tabs">
         <button 
-          className={`tab-button ${activeTab === 'all' ? 'active' : ''}`}
+          className={`booking-page-tab-button ${activeTab === 'all' ? 'booking-page-active' : ''}`}
           onClick={() => setActiveTab('all')}
         >
           All Bookings ({bookings.length})
         </button>
         <button 
-          className={`tab-button ${activeTab === 'confirmed' ? 'active' : ''}`}
+          className={`booking-page-tab-button ${activeTab === 'confirmed' ? 'booking-page-active' : ''}`}
           onClick={() => setActiveTab('confirmed')}
         >
           Confirmed ({bookings.filter(b => b.status?.toLowerCase() === 'confirmed').length})
         </button>
         <button 
-          className={`tab-button ${activeTab === 'pending' ? 'active' : ''}`}
+          className={`booking-page-tab-button ${activeTab === 'pending' ? 'booking-page-active' : ''}`}
           onClick={() => setActiveTab('pending')}
         >
           Pending ({bookings.filter(b => b.status?.toLowerCase() === 'pending').length})
         </button>
         <button 
-          className={`tab-button ${activeTab === 'cancelled' ? 'active' : ''}`}
+          className={`booking-page-tab-button ${activeTab === 'cancelled' ? 'booking-page-active' : ''}`}
           onClick={() => setActiveTab('cancelled')}
         >
           Cancelled ({bookings.filter(b => b.status?.toLowerCase() === 'cancelled').length})
@@ -204,80 +212,91 @@ const Bookings = () => {
       </div>
 
       {/* Bookings List */}
-      <div className="bookings-page-content">
+      <div className="booking-page-content">
         {filteredBookings.length > 0 ? (
-          <div className="bookings-list">
+          <div className="booking-page-bookings-list">
             {filteredBookings.map((booking) => (
-              <div key={booking.booking_id} className="booking-card">
-                <div className="booking-header">
-                  <div className="booking-id">
-                    <span className="label">Booking ID:</span>
-                    <span className="value">#{booking.booking_id}</span>
+              <div key={booking.booking_id} className="booking-page-booking-card">
+                <div className="booking-page-booking-header">
+                  <div className="booking-page-booking-id">
+                    <span className="booking-page-label">Booking ID:</span>
+                    <span className="booking-page-value">#{booking.booking_id}</span>
                   </div>
                   <div 
-                    className="booking-status"
+                    className="booking-page-booking-status"
                     style={{ backgroundColor: getStatusColor(booking.status) }}
                   >
                     {booking.status || 'Unknown'}
                   </div>
                 </div>
 
-                <div className="booking-details">
-                  <div className="detail-row">
-                    <div className="detail-item">
-                      <span className="label">Customer:</span>
-                      <span className="value">{booking.username || 'Unknown User'}</span>
+                <div className="booking-page-booking-details">
+                  <div className="booking-page-detail-row">
+                    <div className="booking-page-detail-item">
+                      <span className="booking-page-label">Customer Email:</span>
+                      <span className="booking-page-value booking-page-customer-email">{booking.user_email || 'No email provided'}</span>
                     </div>
-                    <div className="detail-item">
-                      <span className="label">Booking Date:</span>
-                      <span className="value">{formatDate(booking.booking_date)}</span>
+                    <div className="booking-page-detail-item">
+                      <span className="booking-page-label">Booking Date:</span>
+                      <span className="booking-page-value">{formatDate(booking.booking_date)}</span>
                     </div>
                   </div>
 
-                  <div className="detail-row">
-                    <div className="detail-item">
-                      <span className="label">Shift Type:</span>
+                  <div className="booking-page-detail-row">
+                    <div className="booking-page-detail-item">
+                      <span className="booking-page-label">Shift Type:</span>
                       <span 
-                        className="shift-type"
+                        className="booking-page-shift-type"
                         style={{ backgroundColor: getShiftTypeColor(booking.shift_type) }}
                       >
                         {booking.shift_type || 'Not specified'}
                       </span>
                     </div>
-                    <div className="detail-item">
-                      <span className="label">Total Cost:</span>
-                      <span className="value cost">${booking.total_cost?.toLocaleString() || '0'}</span>
+                    <div className="booking-page-detail-item">
+                      <span className="booking-page-label">Total Cost:</span>
+                      <span className="booking-page-value booking-page-cost">${booking.total_cost?.toLocaleString() || '0'}</span>
                     </div>
                   </div>
 
-                  <div className="detail-row">
-                    <div className="detail-item">
-                      <span className="label">Source:</span>
-                      <span className="value">{booking.booking_source || 'Direct'}</span>
+                  <div className="booking-page-detail-row">
+                    <div className="booking-page-detail-item">
+                      <span className="booking-page-label">Source:</span>
+                      <span className="booking-page-value">{booking.booking_source || 'Direct'}</span>
                     </div>
-                    <div className="detail-item">
-                      <span className="label">Booked At:</span>
-                      <span className="value">{formatDateTime(booking.booked_at)}</span>
+                    <div className="booking-page-detail-item">
+                      <span className="booking-page-label">Booked At:</span>
+                      <span className="booking-page-value">{formatDateTime(booking.booked_at)}</span>
+                    </div>
+                  </div>
+
+                  <div className="booking-page-detail-row">
+                    <div className="booking-page-detail-item">
+                      <span className="booking-page-label">User ID:</span>
+                      <span className="booking-page-value booking-page-user-id">{booking.user_id}</span>
+                    </div>
+                    <div className="booking-page-detail-item">
+                      <span className="booking-page-label">Property ID:</span>
+                      <span className="booking-page-value booking-page-property-id">{booking.property_id}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="booking-footer">
-                  <div className="footer-item">
-                    <span className="label">Created:</span>
-                    <span className="value">{formatDateTime(booking.created_at)}</span>
+                <div className="booking-page-booking-footer">
+                  <div className="booking-page-footer-item">
+                    <span className="booking-page-label">Created:</span>
+                    <span className="booking-page-value">{formatDateTime(booking.created_at)}</span>
                   </div>
-                  <div className="footer-item">
-                    <span className="label">Updated:</span>
-                    <span className="value">{formatDateTime(booking.updated_at)}</span>
+                  <div className="booking-page-footer-item">
+                    <span className="booking-page-label">Updated:</span>
+                    <span className="booking-page-value">{formatDateTime(booking.updated_at)}</span>
                   </div>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="no-bookings">
-            <div className="no-data-content">
+          <div className="booking-page-no-bookings">
+            <div className="booking-page-no-data-content">
               <h3>No Bookings Found</h3>
               <p>
                 {activeTab === 'all' 
