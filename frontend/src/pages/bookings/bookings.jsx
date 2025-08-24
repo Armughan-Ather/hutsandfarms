@@ -7,6 +7,19 @@ const Bookings = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('all');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addBookingLoading, setAddBookingLoading] = useState(false);
+  const [addBookingError, setAddBookingError] = useState('');
+  const [addBookingSuccess, setAddBookingSuccess] = useState('');
+
+  // Form state
+  const [formData, setFormData] = useState({
+    cnic: '',
+    phone_no: '',
+    booking_date: '',
+    shift_type: '',
+    booking_source: ''
+  });
 
   useEffect(() => {
     fetchBookings();
@@ -53,8 +66,86 @@ const Bookings = () => {
   };
 
   const handleAddNewBooking = () => {
-    // TODO: Implement add new booking functionality
-    alert('Add New Booking functionality will be implemented here!');
+    setShowAddModal(true);
+    setAddBookingError('');
+    setAddBookingSuccess('');
+    setFormData({
+      cnic: '',
+      phone_no: '',
+      booking_date: '',
+      shift_type: '',
+      booking_source: ''
+    });
+  };
+
+  const handleCloseModal = () => {
+    setShowAddModal(false);
+    setAddBookingError('');
+    setAddBookingSuccess('');
+    setFormData({
+      cnic: '',
+      phone_no: '',
+      booking_date: '',
+      shift_type: '',
+      booking_source: ''
+    });
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setAddBookingLoading(true);
+    setAddBookingError('');
+    setAddBookingSuccess('');
+
+    try {
+      const token = localStorage.getItem('propertyToken');
+      if (!token) {
+        setAddBookingError('No authentication token found. Please login again.');
+        setAddBookingLoading(false);
+        return;
+      }
+
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+      const response = await axios.post(`${backendUrl}/api/bookings/create`, formData, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      setAddBookingSuccess('Booking created successfully!');
+      setAddBookingLoading(false);
+      
+      // Refresh bookings list
+      setTimeout(() => {
+        fetchBookings();
+        handleCloseModal();
+      }, 1500);
+
+    } catch (err) {
+      console.log('Error creating booking:', err);
+      setAddBookingLoading(false);
+      
+      if (err.response?.data?.error) {
+        setAddBookingError(err.response.data.error);
+      } else if (err.response?.data?.details) {
+        setAddBookingError(err.response.data.details);
+      } else if (err.response) {
+        setAddBookingError('Failed to create booking. Please try again.');
+      } else if (err.request) {
+        setAddBookingError('Network error. Please check your connection and try again.');
+      } else {
+        setAddBookingError('An unexpected error occurred. Please try again.');
+      }
+    }
   };
 
   const getStatusColor = (status) => {
@@ -308,6 +399,159 @@ const Bookings = () => {
           </div>
         )}
       </div>
+
+      {/* Add Booking Modal */}
+      {showAddModal && (
+        <div className="booking-page-modal-overlay" onClick={handleCloseModal}>
+          <div className="booking-page-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="booking-page-modal-header">
+              <h2>Add New Booking</h2>
+              <button 
+                className="booking-page-modal-close" 
+                onClick={handleCloseModal}
+                aria-label="Close modal"
+              >
+                ×
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="booking-page-form">
+              {addBookingError && (
+                <div className="booking-page-form-error">
+                  {addBookingError}
+                </div>
+              )}
+
+              {addBookingSuccess && (
+                <div className="booking-page-form-success">
+                  {addBookingSuccess}
+                </div>
+              )}
+
+              <div className="booking-page-form-group">
+                <label htmlFor="cnic" className="booking-page-form-label">
+                  CNIC Number <span className="booking-page-required">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="cnic"
+                  name="cnic"
+                  value={formData.cnic}
+                  onChange={handleInputChange}
+                  placeholder="e.g., 12345-1234567-1 or 1234512345671"
+                  className="booking-page-form-input"
+                  required
+                />
+                <small className="booking-page-form-help">
+                  Enter 13 digits (with or without dashes)
+                </small>
+              </div>
+
+              <div className="booking-page-form-group">
+                <label htmlFor="phone_no" className="booking-page-form-label">
+                  Phone Number <span className="booking-page-required">*</span>
+                </label>
+                <input
+                  type="tel"
+                  id="phone_no"
+                  name="phone_no"
+                  value={formData.phone_no}
+                  onChange={handleInputChange}
+                  placeholder="e.g., +923001234567"
+                  className="booking-page-form-input"
+                  required
+                />
+                <small className="booking-page-form-help">
+                  Enter 10-15 digits (optional + prefix)
+                </small>
+              </div>
+
+              <div className="booking-page-form-group">
+                <label htmlFor="booking_date" className="booking-page-form-label">
+                  Booking Date <span className="booking-page-required">*</span>
+                </label>
+                <input
+                  type="date"
+                  id="booking_date"
+                  name="booking_date"
+                  value={formData.booking_date}
+                  onChange={handleInputChange}
+                  className="booking-page-form-input"
+                  required
+                  min={new Date().toISOString().split('T')[0]}
+                />
+                <small className="booking-page-form-help">
+                  Select a future date
+                </small>
+              </div>
+
+              <div className="booking-page-form-group">
+                <label htmlFor="shift_type" className="booking-page-form-label">
+                  Shift Type <span className="booking-page-required">*</span>
+                </label>
+                <select
+                  id="shift_type"
+                  name="shift_type"
+                  value={formData.shift_type}
+                  onChange={handleInputChange}
+                  className="booking-page-form-select"
+                  required
+                >
+                  <option value="">Select shift type</option>
+                  <option value="Day">Day</option>
+                  <option value="Night">Night</option>
+                  <option value="Full Day">Full Day</option>
+                  <option value="Full Night">Full Night</option>
+                </select>
+              </div>
+
+              <div className="booking-page-form-group">
+                <label htmlFor="booking_source" className="booking-page-form-label">
+                  Booking Source <span className="booking-page-required">*</span>
+                </label>
+                <select
+                  id="booking_source"
+                  name="booking_source"
+                  value={formData.booking_source}
+                  onChange={handleInputChange}
+                  className="booking-page-form-select"
+                  required
+                >
+                  <option value="">Select booking source</option>
+                  <option value="Website">Website</option>
+                  <option value="WhatsApp Bot">WhatsApp Bot</option>
+                  <option value="Third-Party">Third-Party</option>
+                </select>
+              </div>
+
+              <div className="booking-page-form-actions">
+                <button
+                  type="button"
+                  onClick={handleCloseModal}
+                  className="booking-page-form-cancel"
+                  disabled={addBookingLoading}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="booking-page-form-submit"
+                  disabled={addBookingLoading}
+                >
+                  {addBookingLoading ? (
+                    <>
+                      <span className="booking-page-loading-dots"></span>
+                      Creating...
+                    </>
+                  ) : (
+                    'Create Booking'
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

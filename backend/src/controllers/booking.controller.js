@@ -296,13 +296,27 @@ export const createBooking = async (req, res) => {
   try {
     // Get property_id from middleware
     const { property_id } = req.property;
-    const { booking_date, shift_type, booking_source } = req.body;
-    const user_id = req.user.user_id; // From auth.middleware.js
+    const { cnic, phone_no, booking_date, shift_type, booking_source } = req.body;
 
     // Validate required fields
-    if (!user_id || !property_id || !booking_date || !shift_type || !booking_source) {
+    if (!cnic || !phone_no || !property_id || !booking_date || !shift_type || !booking_source) {
       await transaction.rollback();
-      return res.status(400).json({ error: 'Missing required fields: user_id, property_id, booking_date, shift_type, booking_source' });
+      return res.status(400).json({ error: 'Missing required fields: cnic, phone_no, property_id, booking_date, shift_type, booking_source' });
+    }
+
+    // Remove dashes from cnic
+    const cleanCnic = cnic.replace(/-/g, '');
+
+    // Validate cnic format (e.g., 13 digits for Pakistan CNIC)
+    if (!/^\d{13}$/.test(cleanCnic)) {
+      await transaction.rollback();
+      return res.status(400).json({ error: 'Invalid CNIC format. Must be 13 digits (with or without dashes)' });
+    }
+
+    // Validate phone_no format (e.g., +923001234567)
+    if (!/^\+?\d{10,15}$/.test(phone_no)) {
+      await transaction.rollback();
+      return res.status(400).json({ error: 'Invalid phone number format. Must be 10-15 digits (optional + prefix)' });
     }
 
     // Validate shift_type
@@ -324,12 +338,19 @@ export const createBooking = async (req, res) => {
       return res.status(400).json({ error: 'Invalid booking_date format. Use ISO format (e.g., "2025-07-23")' });
     }
 
-    // Validate user exists
-    const user = await User.findByPk(user_id, { transaction });
+    // Find or create user by cnic
+    let user = await User.findOne({ where: { cnic: cleanCnic }, transaction });
     if (!user) {
-      await transaction.rollback();
-      return res.status(404).json({ error: 'User not found' });
+      user = await User.create({
+        user_id: uuidv4(),
+        cnic: cleanCnic,
+        phone_no,
+        created_at: new Date(),
+        updated_at: new Date(),
+      }, { transaction });
     }
+
+    const user_id = user.user_id;
 
     // Validate property exists
     const property = await Property.findByPk(property_id, { transaction });
@@ -406,6 +427,8 @@ export const createBooking = async (req, res) => {
       booking: {
         booking_id: booking.booking_id,
         user_id: booking.user_id,
+        user_cnic: cleanCnic,
+        user_phone_no: user.phone_no,
         property_id: booking.property_id,
         booking_date: booking.booking_date,
         shift_type: booking.shift_type,
@@ -429,7 +452,6 @@ export const createBooking = async (req, res) => {
     res.status(500).json({ error: 'Failed to create booking', details: error.message });
   }
 };
-
 export const viewPropertyBookings = async (req, res) => {
   try {
     // Get property_id from middleware
