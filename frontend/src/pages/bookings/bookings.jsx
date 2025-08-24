@@ -11,6 +11,9 @@ const Bookings = () => {
   const [addBookingLoading, setAddBookingLoading] = useState(false);
   const [addBookingError, setAddBookingError] = useState('');
   const [addBookingSuccess, setAddBookingSuccess] = useState('');
+  const [actionLoading, setActionLoading] = useState({});
+  const [actionError, setActionError] = useState('');
+  const [actionSuccess, setActionSuccess] = useState('');
 
   // Form state
   const [formData, setFormData] = useState({
@@ -148,6 +151,108 @@ const Bookings = () => {
     }
   };
 
+  const handleCancelBooking = async (bookingId) => {
+    setActionLoading(prev => ({ ...prev, [bookingId]: true }));
+    setActionError('');
+    setActionSuccess('');
+
+    try {
+      const token = localStorage.getItem('propertyToken');
+      if (!token) {
+        setActionError('No authentication token found. Please login again.');
+        setActionLoading(prev => ({ ...prev, [bookingId]: false }));
+        return;
+      }
+
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+      await axios.post(`${backendUrl}/api/bookings/cancel`, 
+        { booking_id: bookingId },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      setActionSuccess('Booking cancelled successfully!');
+      setActionLoading(prev => ({ ...prev, [bookingId]: false }));
+      
+      // Refresh bookings list
+      setTimeout(() => {
+        fetchBookings();
+        setActionSuccess('');
+      }, 1500);
+
+    } catch (err) {
+      console.log('Error cancelling booking:', err);
+      setActionLoading(prev => ({ ...prev, [bookingId]: false }));
+      
+      if (err.response?.data?.error) {
+        setActionError(err.response.data.error);
+      } else if (err.response?.data?.details) {
+        setActionError(err.response.data.details);
+      } else if (err.response) {
+        setActionError('Failed to cancel booking. Please try again.');
+      } else if (err.request) {
+        setActionError('Network error. Please check your connection and try again.');
+      } else {
+        setActionError('An unexpected error occurred. Please try again.');
+      }
+    }
+  };
+
+  const handleConfirmBooking = async (bookingId) => {
+    setActionLoading(prev => ({ ...prev, [bookingId]: true }));
+    setActionError('');
+    setActionSuccess('');
+
+    try {
+      const token = localStorage.getItem('propertyToken');
+      if (!token) {
+        setActionError('No authentication token found. Please login again.');
+        setActionLoading(prev => ({ ...prev, [bookingId]: false }));
+        return;
+      }
+
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+      await axios.post(`${backendUrl}/api/bookings/confirm`, 
+        { booking_id: bookingId },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      setActionSuccess('Booking confirmed successfully!');
+      setActionLoading(prev => ({ ...prev, [bookingId]: false }));
+      
+      // Refresh bookings list
+      setTimeout(() => {
+        fetchBookings();
+        setActionSuccess('');
+      }, 1500);
+
+    } catch (err) {
+      console.log('Error confirming booking:', err);
+      setActionLoading(prev => ({ ...prev, [bookingId]: false }));
+      
+      if (err.response?.data?.error) {
+        setActionError(err.response.data.error);
+      } else if (err.response?.data?.details) {
+        setActionError(err.response.data.details);
+      } else if (err.response) {
+        setActionError('Failed to confirm booking. Please try again.');
+      } else if (err.request) {
+        setActionError('Network error. Please check your connection and try again.');
+      } else {
+        setActionError('An unexpected error occurred. Please try again.');
+      }
+    }
+  };
+
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
       case 'confirmed':
@@ -267,6 +372,12 @@ const Bookings = () => {
           </div>
           <div className="booking-page-stat-card">
             <div className="booking-page-stat-number">
+              {bookings.filter(b => b.status?.toLowerCase() === 'completed').length}
+            </div>
+            <div className="booking-page-stat-label">Completed</div>
+          </div>
+          <div className="booking-page-stat-card">
+            <div className="booking-page-stat-number">
               {bookings.filter(b => b.status?.toLowerCase() === 'cancelled').length}
             </div>
             <div className="booking-page-stat-label">Cancelled</div>
@@ -295,6 +406,12 @@ const Bookings = () => {
           Pending ({bookings.filter(b => b.status?.toLowerCase() === 'pending').length})
         </button>
         <button 
+          className={`booking-page-tab-button ${activeTab === 'completed' ? 'booking-page-active' : ''}`}
+          onClick={() => setActiveTab('completed')}
+        >
+          Completed ({bookings.filter(b => b.status?.toLowerCase() === 'completed').length})
+        </button>
+        <button 
           className={`booking-page-tab-button ${activeTab === 'cancelled' ? 'booking-page-active' : ''}`}
           onClick={() => setActiveTab('cancelled')}
         >
@@ -302,88 +419,132 @@ const Bookings = () => {
         </button>
       </div>
 
-      {/* Bookings List */}
+      {/* Success/Error Messages */}
+      {(actionSuccess || actionError) && (
+        <div className="booking-page-messages">
+          {actionSuccess && (
+            <div className="booking-page-success-message">
+              {actionSuccess}
+            </div>
+          )}
+          {actionError && (
+            <div className="booking-page-error-message">
+              {actionError}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Bookings Table */}
       <div className="booking-page-content">
         {filteredBookings.length > 0 ? (
-          <div className="booking-page-bookings-list">
-            {filteredBookings.map((booking) => (
-              <div key={booking.booking_id} className="booking-page-booking-card">
-                <div className="booking-page-booking-header">
-                  <div className="booking-page-booking-id">
-                    <span className="booking-page-label">Booking ID:</span>
-                    <span className="booking-page-value">#{booking.booking_id}</span>
-                  </div>
-                  <div 
-                    className="booking-page-booking-status"
-                    style={{ backgroundColor: getStatusColor(booking.status) }}
-                  >
-                    {booking.status || 'Unknown'}
-                  </div>
-                </div>
-
-                <div className="booking-page-booking-details">
-                  <div className="booking-page-detail-row">
-                    <div className="booking-page-detail-item">
-                      <span className="booking-page-label">Customer Email:</span>
-                      <span className="booking-page-value booking-page-customer-email">{booking.user_email || 'No email provided'}</span>
-                    </div>
-                    <div className="booking-page-detail-item">
-                      <span className="booking-page-label">Booking Date:</span>
-                      <span className="booking-page-value">{formatDate(booking.booking_date)}</span>
-                    </div>
-                  </div>
-
-                  <div className="booking-page-detail-row">
-                    <div className="booking-page-detail-item">
-                      <span className="booking-page-label">Shift Type:</span>
+          <div className="booking-page-table-container">
+            <table className="booking-page-table">
+              <thead className="booking-page-table-header">
+                <tr>
+                  <th className="booking-page-table-th">Booking ID</th>
+                  <th className="booking-page-table-th">Status</th>
+                  <th className="booking-page-table-th">Customer Email</th>
+                  <th className="booking-page-table-th">Booking Date</th>
+                  <th className="booking-page-table-th">Shift Type</th>
+                  <th className="booking-page-table-th">Total Cost</th>
+                  <th className="booking-page-table-th">Source</th>
+                  <th className="booking-page-table-th">Booked At</th>
+                  <th className="booking-page-table-th">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="booking-page-table-body">
+                {filteredBookings.map((booking) => (
+                  <tr key={booking.booking_id} className="booking-page-table-row">
+                    <td className="booking-page-table-td">
+                      <span className="booking-page-booking-id-value">#{booking.booking_id}</span>
+                    </td>
+                    <td className="booking-page-table-td">
                       <span 
-                        className="booking-page-shift-type"
+                        className="booking-page-status-badge"
+                        style={{ backgroundColor: getStatusColor(booking.status) }}
+                      >
+                        {booking.status || 'Unknown'}
+                      </span>
+                    </td>
+                    <td className="booking-page-table-td">
+                      <span className="booking-page-customer-email">{booking.user_email || 'No email provided'}</span>
+                    </td>
+                    <td className="booking-page-table-td">
+                      {formatDate(booking.booking_date)}
+                    </td>
+                    <td className="booking-page-table-td">
+                      <span 
+                        className="booking-page-shift-type-badge"
                         style={{ backgroundColor: getShiftTypeColor(booking.shift_type) }}
                       >
                         {booking.shift_type || 'Not specified'}
                       </span>
-                    </div>
-                    <div className="booking-page-detail-item">
-                      <span className="booking-page-label">Total Cost:</span>
-                      <span className="booking-page-value booking-page-cost">${booking.total_cost?.toLocaleString() || '0'}</span>
-                    </div>
-                  </div>
-
-                  <div className="booking-page-detail-row">
-                    <div className="booking-page-detail-item">
-                      <span className="booking-page-label">Source:</span>
-                      <span className="booking-page-value">{booking.booking_source || 'Direct'}</span>
-                    </div>
-                    <div className="booking-page-detail-item">
-                      <span className="booking-page-label">Booked At:</span>
-                      <span className="booking-page-value">{formatDateTime(booking.booked_at)}</span>
-                    </div>
-                  </div>
-
-                  <div className="booking-page-detail-row">
-                    <div className="booking-page-detail-item">
-                      <span className="booking-page-label">User ID:</span>
-                      <span className="booking-page-value booking-page-user-id">{booking.user_id}</span>
-                    </div>
-                    <div className="booking-page-detail-item">
-                      <span className="booking-page-label">Property ID:</span>
-                      <span className="booking-page-value booking-page-property-id">{booking.property_id}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="booking-page-booking-footer">
-                  <div className="booking-page-footer-item">
-                    <span className="booking-page-label">Created:</span>
-                    <span className="booking-page-value">{formatDateTime(booking.created_at)}</span>
-                  </div>
-                  <div className="booking-page-footer-item">
-                    <span className="booking-page-label">Updated:</span>
-                    <span className="booking-page-value">{formatDateTime(booking.updated_at)}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
+                    </td>
+                    <td className="booking-page-table-td">
+                      <span className="booking-page-cost">${booking.total_cost?.toLocaleString() || '0'}</span>
+                    </td>
+                    <td className="booking-page-table-td">
+                      {booking.booking_source || 'Direct'}
+                    </td>
+                    <td className="booking-page-table-td">
+                      {formatDateTime(booking.booked_at)}
+                    </td>
+                    <td className="booking-page-table-td">
+                      <div className="booking-page-action-buttons">
+                        {booking.status?.toLowerCase() === 'pending' && (
+                          <>
+                            <button
+                              onClick={() => handleConfirmBooking(booking.booking_id)}
+                              disabled={actionLoading[booking.booking_id]}
+                              className="booking-page-confirm-button"
+                              title="Confirm Booking"
+                            >
+                              {actionLoading[booking.booking_id] ? (
+                                <span className="booking-page-loading-dots"></span>
+                              ) : (
+                                '✅'
+                              )}
+                            </button>
+                            <button
+                              onClick={() => handleCancelBooking(booking.booking_id)}
+                              disabled={actionLoading[booking.booking_id]}
+                              className="booking-page-cancel-button"
+                              title="Cancel Booking"
+                            >
+                              {actionLoading[booking.booking_id] ? (
+                                <span className="booking-page-loading-dots"></span>
+                              ) : (
+                                '❌'
+                              )}
+                            </button>
+                          </>
+                        )}
+                        {booking.status?.toLowerCase() === 'confirmed' && (
+                          <button
+                            onClick={() => handleCancelBooking(booking.booking_id)}
+                            disabled={actionLoading[booking.booking_id]}
+                            className="booking-page-cancel-button"
+                            title="Cancel Booking"
+                          >
+                            {actionLoading[booking.booking_id] ? (
+                              <span className="booking-page-loading-dots"></span>
+                            ) : (
+                              '❌'
+                            )}
+                          </button>
+                        )}
+                        {(booking.status?.toLowerCase() === 'completed' || booking.status?.toLowerCase() === 'cancelled') && (
+                          <span className="booking-page-status-text">
+                            {booking.status?.toLowerCase() === 'completed' ? '✅ Completed' : '❌ Cancelled'}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         ) : (
           <div className="booking-page-no-bookings">

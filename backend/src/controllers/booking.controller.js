@@ -1,169 +1,35 @@
-// import db from '../models/index.js';
-
-// const { Booking, User, Property, PropertyPricing, sequelize } = db;
-
-// // Create a new booking
-// export const createBooking = async (req, res) => {
-//   const transaction = await sequelize.transaction();
-//   try {
-//     const { user_email, user_phone_number, property_username, booking_date, shift_type, booking_source } = req.body;
-
-//     // Validate required fields
-//     if (!user_email || !user_phone_number || !property_username || !booking_date || !shift_type || !booking_source) {
-//       await transaction.rollback();
-//       return res.status(400).json({ error: 'Missing required fields: user_email, user_phone_number, property_username, booking_date, shift_type, booking_source' });
-//     }
-
-//     // Validate shift_type
-//     if (!['Day', 'Night', 'Full Day'].includes(shift_type)) {
-//       await transaction.rollback();
-//       return res.status(400).json({ error: 'Invalid shift_type. Must be "Day", "Night", or "Full Day"' });
-//     }
-
-//     // Validate booking_source
-//     if (!['Website', 'WhatsApp Bot', 'Third-Party'].includes(booking_source)) {
-//       await transaction.rollback();
-//       return res.status(400).json({ error: 'Invalid booking_source. Must be "Website", "WhatsApp Bot", or "Third-Party"' });
-//     }
-
-//     // Validate booking_date
-//     const parsedBookingDate = new Date(booking_date);
-//     if (isNaN(parsedBookingDate)) {
-//       await transaction.rollback();
-//       return res.status(400).json({ error: 'Invalid booking_date format. Use ISO format (e.g., "2025-07-23")' });
-//     }
-
-//     // Find user by email and verify phone_number
-//     const user = await User.findOne({ where: { email: user_email }, transaction });
-//     if (!user) {
-//       await transaction.rollback();
-//       return res.status(404).json({ error: 'User not found' });
-//     }
-//     if (user.phone_number !== user_phone_number) {
-//       await transaction.rollback();
-//       return res.status(400).json({ error: 'Phone number does not match user record' });
-//     }
-//     // Verify the authenticated user matches the request
-//     if (req.user.user_id !== user.user_id) {
-//       await transaction.rollback();
-//       return res.status(403).json({ error: 'Forbidden - You can only book for yourself' });
-//     }
-
-//     // Find property by username
-//     const property = await Property.findOne({ where: { username: property_username }, transaction });
-//     if (!property) {
-//       await transaction.rollback();
-//       return res.status(404).json({ error: 'Property not found' });
-//     }
-
-//     // Check for existing booking on the same date and shift
-//     const existingBooking = await Booking.findOne({
-//       where: {
-//         property_id: property.property_id,
-//         booking_date: parsedBookingDate,
-//         shift_type,
-//       },
-//       transaction,
-//     });
-//     if (existingBooking) {
-//       await transaction.rollback();
-//       return res.status(400).json({ error: 'Property is already booked for this date and shift' });
-//     }
-
-//     // Find property pricing
-//     const pricing = await PropertyPricing.findOne({ where: { property_id: property.property_id }, transaction });
-//     if (!pricing) {
-//       await transaction.rollback();
-//       return res.status(404).json({ error: 'Pricing not found for this property' });
-//     }
-
-//     // Calculate total_cost based on shift_type and booking_date
-//     const isWeekend = parsedBookingDate.getDay() === 0 || parsedBookingDate.getDay() === 6; // Sunday or Saturday
-//     let total_cost;
-//     if (shift_type === 'Day') {
-//       total_cost = isWeekend && pricing.weekend_multiplier
-//         ? pricing.base_price_day_shift * pricing.weekend_multiplier
-//         : pricing.base_price_day_shift;
-//     } else if (shift_type === 'Night') {
-//       total_cost = isWeekend && pricing.weekend_multiplier
-//         ? pricing.base_price_night_shift * pricing.weekend_multiplier
-//         : pricing.base_price_night_shift;
-//     } else {
-//       total_cost = isWeekend && pricing.weekend_multiplier
-//         ? pricing.base_price_full_day * pricing.weekend_multiplier
-//         : pricing.base_price_full_day;
-//     }
-
-//     if (!total_cost || isNaN(total_cost)) {
-//       await transaction.rollback();
-//       return res.status(400).json({ error: 'Invalid pricing data for the selected shift_type' });
-//     }
-
-//     // Create booking
-//     const booking = await Booking.create({
-//       user_id: user.user_id,
-//       user_phone_number,
-//       property_id: property.property_id,
-//       booking_date: parsedBookingDate,
-//       shift_type,
-//       total_cost,
-//       booking_source,
-//       status: 'Pending',
-//       booked_at: new Date(),
-//       created_at: new Date(),
-//       updated_at: new Date(),
-//     }, { transaction });
-
-//     await transaction.commit();
-
-//     // Return response
-//     res.status(201).json({
-//       message: 'Booking created successfully',
-//       booking: {
-//         booking_id: booking.booking_id,
-//         user_id: booking.user_id,
-//         user_phone_number: booking.user_phone_number,
-//         property_id: booking.property_id,
-//         booking_date: booking.booking_date,
-//         shift_type: booking.shift_type,
-//         total_cost: booking.total_cost,
-//         booking_source: booking.booking_source,
-//         status: booking.status,
-//         booked_at: booking.booked_at,
-//         created_at: booking.created_at,
-//         updated_at: booking.updated_at,
-//       },
-//     });
-//   } catch (error) {
-//     await transaction.rollback();
-//     console.error('Error creating booking:', error);
-//     if (error.name === 'SequelizeUniqueConstraintError') {
-//       return res.status(400).json({
-//         error: 'Failed to create booking',
-//         details: `Unique constraint violation: ${error.errors.map(e => `${e.path} (${e.value}) already exists`).join(', ')}`,
-//       });
-//     }
-//     res.status(500).json({ error: 'Failed to create booking', details: error.message });
-//   }
-// };
-
-
 import { v4 as uuidv4 } from 'uuid';
 import db from '../models/index.js';
 
 const { Booking, User, Property, PropertyPricing, PropertyShiftPricing, sequelize } = db;
 
-// Create a new booking
+
 // export const createBooking = async (req, res) => {
 //   const transaction = await sequelize.transaction();
 //   try {
-//     const { property_id, booking_date, shift_type, booking_source } = req.body;
-//     const user_id = req.user.user_id; // From auth.middleware.js
+//     // Get property_id from middleware
+//     const { property_id } = req.property;
+//     const { cnic, phone_no, booking_date, shift_type, booking_source } = req.body;
 
 //     // Validate required fields
-//     if (!user_id || !property_id || !booking_date || !shift_type || !booking_source) {
+//     if (!cnic || !phone_no || !property_id || !booking_date || !shift_type || !booking_source) {
 //       await transaction.rollback();
-//       return res.status(400).json({ error: 'Missing required fields: user_id, property_id, booking_date, shift_type, booking_source' });
+//       return res.status(400).json({ error: 'Missing required fields: cnic, phone_no, property_id, booking_date, shift_type, booking_source' });
+//     }
+
+//     // Remove dashes from cnic
+//     const cleanCnic = cnic.replace(/-/g, '');
+
+//     // Validate cnic format (e.g., 13 digits for Pakistan CNIC)
+//     if (!/^\d{13}$/.test(cleanCnic)) {
+//       await transaction.rollback();
+//       return res.status(400).json({ error: 'Invalid CNIC format. Must be 13 digits (with or without dashes)' });
+//     }
+
+//     // Validate phone_no format (e.g., +923001234567)
+//     if (!/^\+?\d{10,15}$/.test(phone_no)) {
+//       await transaction.rollback();
+//       return res.status(400).json({ error: 'Invalid phone number format. Must be 10-15 digits (optional + prefix)' });
 //     }
 
 //     // Validate shift_type
@@ -185,12 +51,19 @@ const { Booking, User, Property, PropertyPricing, PropertyShiftPricing, sequeliz
 //       return res.status(400).json({ error: 'Invalid booking_date format. Use ISO format (e.g., "2025-07-23")' });
 //     }
 
-//     // Validate user exists
-//     const user = await User.findByPk(user_id, { transaction });
+//     // Find or create user by cnic
+//     let user = await User.findOne({ where: { cnic: cleanCnic }, transaction });
 //     if (!user) {
-//       await transaction.rollback();
-//       return res.status(404).json({ error: 'User not found' });
+//       user = await User.create({
+//         user_id: uuidv4(),
+//         cnic: cleanCnic,
+//         phone_no,
+//         created_at: new Date(),
+//         updated_at: new Date(),
+//       }, { transaction });
 //     }
+
+//     const user_id = user.user_id;
 
 //     // Validate property exists
 //     const property = await Property.findByPk(property_id, { transaction });
@@ -267,6 +140,8 @@ const { Booking, User, Property, PropertyPricing, PropertyShiftPricing, sequeliz
 //       booking: {
 //         booking_id: booking.booking_id,
 //         user_id: booking.user_id,
+//         user_cnic: cleanCnic,
+//         user_phone_no: user.phone_no,
 //         property_id: booking.property_id,
 //         booking_date: booking.booking_date,
 //         shift_type: booking.shift_type,
@@ -344,7 +219,7 @@ export const createBooking = async (req, res) => {
       user = await User.create({
         user_id: uuidv4(),
         cnic: cleanCnic,
-        phone_no,
+        phone_number: phone_no, // Map phone_no to phone_number
         created_at: new Date(),
         updated_at: new Date(),
       }, { transaction });
@@ -428,7 +303,7 @@ export const createBooking = async (req, res) => {
         booking_id: booking.booking_id,
         user_id: booking.user_id,
         user_cnic: cleanCnic,
-        user_phone_no: user.phone_no,
+        user_phone_no: user.phone_number, // Use phone_number from user
         property_id: booking.property_id,
         booking_date: booking.booking_date,
         shift_type: booking.shift_type,
@@ -452,6 +327,7 @@ export const createBooking = async (req, res) => {
     res.status(500).json({ error: 'Failed to create booking', details: error.message });
   }
 };
+
 export const viewPropertyBookings = async (req, res) => {
   try {
     // Get property_id from middleware
@@ -513,5 +389,196 @@ export const viewPropertyBookings = async (req, res) => {
       error: 'Failed to retrieve bookings',
       details: error.message,
     });
+  }
+};
+
+export const cancelBooking = async (req, res) => {
+  const transaction = await sequelize.transaction();
+  try {
+    const { booking_id } = req.body;
+    const { property_id } = req.property;
+
+    // Validate required fields
+    if (!booking_id || !property_id) {
+      await transaction.rollback();
+      return res.status(400).json({ error: 'Missing required fields: booking_id, property_id' });
+    }
+
+    // Find booking
+    const booking = await Booking.findOne({
+      where: { booking_id, property_id },
+      transaction,
+    });
+    if (!booking) {
+      await transaction.rollback();
+      return res.status(404).json({ error: 'Booking not found or not associated with this property' });
+    }
+
+    // Check if already cancelled
+    if (booking.status === 'Cancelled') {
+      await transaction.rollback();
+      return res.status(400).json({ error: 'Booking is already cancelled' });
+    }
+
+    // Update status to Cancelled
+    await booking.update(
+      { status: 'Cancelled', updated_at: new Date() },
+      { transaction }
+    );
+
+    await transaction.commit();
+
+    // Return response
+    res.status(200).json({
+      message: 'Booking cancelled successfully',
+      booking: {
+        booking_id: booking.booking_id,
+        user_id: booking.user_id,
+        property_id: booking.property_id,
+        booking_date: booking.booking_date,
+        shift_type: booking.shift_type,
+        total_cost: booking.total_cost,
+        booking_source: booking.booking_source,
+        status: booking.status,
+        booked_at: booking.booked_at,
+        created_at: booking.created_at,
+        updated_at: booking.updated_at,
+      },
+    });
+  } catch (error) {
+    await transaction.rollback();
+    console.error('Error cancelling booking:', error);
+    res.status(500).json({ error: 'Failed to cancel booking', details: error.message });
+  }
+};
+
+export const confirmBooking = async (req, res) => {
+  const transaction = await sequelize.transaction();
+  try {
+    const { booking_id } = req.body;
+    const { property_id } = req.property;
+    
+    // Validate required fields
+    if (!booking_id || !property_id) {
+      await transaction.rollback();
+      return res.status(400).json({ error: 'Missing required fields: booking_id, property_id' });
+    }
+
+    // Find booking
+    const booking = await Booking.findOne({
+      where: { booking_id, property_id },
+      transaction,
+    });
+    if (!booking) {
+      await transaction.rollback();
+      return res.status(404).json({ error: 'Booking not found or not associated with this property' });
+    }
+
+    // Check if already confirmed
+    if (booking.status === 'Confirmed') {
+      await transaction.rollback();
+      return res.status(400).json({ error: 'Booking is already confirmed' });
+    }
+
+    // Update status to Confirmed
+    await booking.update(
+      { status: 'Confirmed', updated_at: new Date() },
+      { transaction }
+    );
+
+    await transaction.commit();
+
+    // Return response
+    res.status(200).json({
+      message: 'Booking confirmed successfully',
+      booking: {
+        booking_id: booking.booking_id,
+        user_id: booking.user_id,
+        property_id: booking.property_id,
+        booking_date: booking.booking_date,
+        shift_type: booking.shift_type,
+        total_cost: booking.total_cost,
+        booking_source: booking.booking_source,
+        status: booking.status,
+        booked_at: booking.booked_at,
+        created_at: booking.created_at,
+        updated_at: booking.updated_at,
+      },
+    });
+  } catch (error) {
+    await transaction.rollback();
+    console.error('Error confirming booking:', error);
+    res.status(500).json({ error: 'Failed to confirm booking', details: error.message });
+  }
+};
+
+export const completeBooking = async (req, res) => {
+  const transaction = await sequelize.transaction();
+  try {
+    // Get property_id from middleware
+    const { property_id } = req.property;
+
+    // Validate property_id
+    if (!property_id) {
+      await transaction.rollback();
+      return res.status(401).json({ error: 'Property ID not found in authentication data' });
+    }
+
+    // Find all confirmed bookings with past booking_date
+    const currentDate = new Date(); // August 24, 2025, 10:56 PM PKT
+    const bookings = await Booking.findAll({
+      where: {
+        property_id,
+        status: 'Confirmed',
+        booking_date: {
+          [sequelize.Op.lt]: currentDate, // Less than current date
+        },
+      },
+      transaction,
+    });
+
+    // If no eligible bookings, return empty array
+    if (!bookings.length) {
+      await transaction.commit();
+      return res.status(200).json({
+        message: 'No eligible bookings found to mark as completed',
+        bookings: [],
+      });
+    }
+
+    // Update status to Completed for all eligible bookings
+    const updatedBookings = await Promise.all(
+      bookings.map(async (booking) => {
+        await booking.update(
+          { status: 'Completed', updated_at: new Date() },
+          { transaction }
+        );
+        return {
+          booking_id: booking.booking_id,
+          user_id: booking.user_id,
+          property_id: booking.property_id,
+          booking_date: booking.booking_date,
+          shift_type: booking.shift_type,
+          total_cost: booking.total_cost,
+          booking_source: booking.booking_source,
+          status: booking.status,
+          booked_at: booking.booked_at,
+          created_at: booking.created_at,
+          updated_at: booking.updated_at,
+        };
+      })
+    );
+
+    await transaction.commit();
+
+    // Return response
+    res.status(200).json({
+      message: `Successfully marked ${updatedBookings.length} booking(s) as completed`,
+      bookings: updatedBookings,
+    });
+  } catch (error) {
+    await transaction.rollback();
+    console.error('Error completing bookings:', error);
+    res.status(500).json({ error: 'Failed to complete bookings', details: error.message });
   }
 };
