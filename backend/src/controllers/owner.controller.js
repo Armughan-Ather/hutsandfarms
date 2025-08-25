@@ -103,3 +103,69 @@ export const addOwner = async (req, res) => {
     res.status(500).json({ error: 'Failed to add owner', details: error.message });
   }
 };
+
+
+
+export const loginOwner = async (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    // Validate required fields
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Missing required fields: username, password' });
+    }
+
+    // Find owner by username using raw MySQL query
+    const owners = await sequelize.query(
+      'SELECT owner_id, first_name, last_name, email, phone_number, username, password FROM owners WHERE username = ?',
+      {
+        replacements: [username],
+        type: sequelize.QueryTypes.SELECT
+      }
+    );
+
+    // Check if owner exists
+    if (!owners || owners.length === 0) {
+      return res.status(401).json({ error: 'Invalid username or password' });
+    }
+
+    const owner = owners[0];
+
+    // Check password (hashed)
+    const isPasswordValid = await bcrypt.compare(password, owner.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ error: 'Invalid username or password' });
+    }
+
+    // Generate JWT
+    const token = jwt.sign(
+      { 
+        owner_id: owner.owner_id, 
+        username: owner.username,
+        first_name: owner.first_name,
+        last_name: owner.last_name,
+        email: owner.email,
+        phone_number: owner.phone_number
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '1d' } // Token expires in 1 day
+    );
+
+    // Return response
+    res.status(200).json({
+      message: 'Owner login successful',
+      token,
+      owner: {
+        owner_id: owner.owner_id,
+        first_name: owner.first_name,
+        last_name: owner.last_name,
+        email: owner.email,
+        phone_number: owner.phone_number,
+        username: owner.username
+      },
+    });
+  } catch (error) {
+    console.error('Error logging in owner:', error);
+    res.status(500).json({ error: 'Failed to login owner', details: error.message });
+  }
+};
