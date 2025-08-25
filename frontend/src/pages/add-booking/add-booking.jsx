@@ -4,11 +4,12 @@
  
  const AddBooking = () => {
    const [formData, setFormData] = useState({
-     cnic: '',
-     phone_no: '',
-     booking_date: '',
-     shift_type: '',
-     booking_source: ''
+    name: '',
+    cnic: '',
+    phone_no: '',
+    booking_date: '',
+    shift_type: '',
+    
    });
    const [loading, setLoading] = useState(false);
    const [error, setError] = useState('');
@@ -100,6 +101,22 @@
  
            <form className="add-booking-page-form" onSubmit={handleSubmit}>
              <div className="add-booking-page-grid">
+             <div className="add-booking-page-form-group">
+                 <label htmlFor="cnic" className="add-booking-page-label">Name <span className="add-booking-page-required">*</span></label>
+                 <input
+                   id="name"
+                   name="name"
+                   type="text"
+                   placeholder="John"
+                   value={formData.name}
+                   onChange={handleChange}
+                   className="add-booking-page-input"
+                   required
+                 />
+                 <small className="add-booking-page-help">Enter name of booking customer</small>
+               </div>
+
+
                <div className="add-booking-page-form-group">
                  <label htmlFor="cnic" className="add-booking-page-label">CNIC Number <span className="add-booking-page-required">*</span></label>
                  <input
@@ -163,7 +180,7 @@
                  </select>
                </div>
  
-               <div className="add-booking-page-form-group">
+               {/* <div className="add-booking-page-form-group">
                  <label htmlFor="booking_source" className="add-booking-page-label">Booking Source <span className="add-booking-page-required">*</span></label>
                  <select
                    id="booking_source"
@@ -178,7 +195,7 @@
                    <option value="WhatsApp Bot">WhatsApp Bot</option>
                    <option value="Third-Party">Third-Party</option>
                  </select>
-               </div>
+               </div> */}
              </div>
  
              <div className="add-booking-page-actions">
