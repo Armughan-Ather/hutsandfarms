@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Login from './pages/login/login';
 import Dashboard from './pages/dashboard/dashboard';
 import Bookings from './pages/bookings/bookings';
+import AddBooking from './pages/add-booking/add-booking';
 import './App.css';
 
 function App() {
@@ -16,6 +17,8 @@ function App() {
       const path = window.location.pathname;
       if (path === '/bookings') {
         setCurrentPage('bookings');
+      } else if (path === '/add-booking') {
+        setCurrentPage('add-booking');
       } else {
         setCurrentPage('dashboard');
       }
@@ -33,6 +36,8 @@ function App() {
         setCurrentPage('bookings');
       } else if (path === '/dashboard') {
         setCurrentPage('dashboard');
+      } else if (path === '/add-booking') {
+        setCurrentPage('add-booking');
       } else {
         setCurrentPage('dashboard');
       }
@@ -58,6 +63,8 @@ function App() {
     return <Login />;
   } else if (currentPage === 'bookings') {
     return <Bookings />;
+  } else if (currentPage === 'add-booking') {
+    return <AddBooking />;
   } else {
     return <Dashboard />;
   }

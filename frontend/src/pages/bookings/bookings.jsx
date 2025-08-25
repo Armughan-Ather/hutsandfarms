@@ -14,6 +14,14 @@ const Bookings = () => {
   const [actionLoading, setActionLoading] = useState({});
   const [actionError, setActionError] = useState('');
   const [actionSuccess, setActionSuccess] = useState('');
+  // Filters & sorting
+  const [filterEmail, setFilterEmail] = useState('');
+  const [filterPhone, setFilterPhone] = useState('');
+  const [filterDate, setFilterDate] = useState('');
+  const [filterShift, setFilterShift] = useState('');
+  const [sortOrder, setSortOrder] = useState('closest');
+  // Row selection for details
+  const [selectedBooking, setSelectedBooking] = useState(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -26,6 +34,29 @@ const Bookings = () => {
 
   useEffect(() => {
     fetchBookings();
+  }, []);
+
+  // One-time completion trigger
+  useEffect(() => {
+    const completePastBookings = async () => {
+      try {
+        const token = localStorage.getItem('propertyToken');
+        if (!token) return;
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+        await axios.post(`${backendUrl}/api/bookings/complete`, {}, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        // Refresh after completion attempt
+        fetchBookings();
+      } catch (e) {
+        // Silent fail to avoid blocking page
+        console.log('Complete bookings check failed:', e?.response?.data || e.message);
+      }
+    };
+    completePastBookings();
   }, []);
 
   const fetchBookings = async () => {
@@ -69,16 +100,7 @@ const Bookings = () => {
   };
 
   const handleAddNewBooking = () => {
-    setShowAddModal(true);
-    setAddBookingError('');
-    setAddBookingSuccess('');
-    setFormData({
-      cnic: '',
-      phone_no: '',
-      booking_date: '',
-      shift_type: '',
-      booking_source: ''
-    });
+    window.location.href = '/add-booking';
   };
 
   const handleCloseModal = () => {
@@ -301,9 +323,26 @@ const Bookings = () => {
     });
   };
 
-  const filteredBookings = bookings.filter(booking => {
+  // Start with tab filter
+  let filteredBookings = bookings.filter(booking => {
     if (activeTab === 'all') return true;
     return booking.status?.toLowerCase() === activeTab;
+  });
+  // Apply search/filters
+  filteredBookings = filteredBookings.filter((booking) => {
+    const email = (booking.user_email || booking.userEmail || '').toLowerCase();
+    const phone = (booking.user_phone_number || booking.userPhoneNumber || '').toLowerCase();
+    const emailMatch = filterEmail ? email.includes(filterEmail.toLowerCase()) : true;
+    const phoneMatch = filterPhone ? phone.includes(filterPhone.toLowerCase()) : true;
+    const dateMatch = filterDate ? (booking.booking_date ? new Date(booking.booking_date).toISOString().slice(0,10) === filterDate : false) : true;
+    const shiftMatch = filterShift ? (booking.shift_type || '').toLowerCase() === filterShift.toLowerCase() : true;
+    return emailMatch && phoneMatch && dateMatch && shiftMatch;
+  });
+  // Sort by booking_date
+  filteredBookings.sort((a, b) => {
+    const da = a.booking_date ? new Date(a.booking_date).getTime() : 0;
+    const db = b.booking_date ? new Date(b.booking_date).getTime() : 0;
+    return sortOrder === 'closest' ? da - db : db - da;
   });
 
   if (loading) {
@@ -350,6 +389,8 @@ const Bookings = () => {
           </div>
         </div>
       </div>
+
+      
 
       {/* Stats Cards */}
       <div className="booking-page-stats">
@@ -419,6 +460,59 @@ const Bookings = () => {
         </button>
       </div>
 
+      {/* Filters Toolbar */}
+      <div className="booking-page-filters">
+        <div className="booking-page-filters-inner">
+          <div className="booking-page-filters-row">
+            <input
+              type="text"
+              className="booking-page-filter-input"
+              placeholder="Search by email"
+              value={filterEmail}
+              onChange={(e) => setFilterEmail(e.target.value)}
+            />
+            <input
+              type="text"
+              className="booking-page-filter-input"
+              placeholder="Search by phone"
+              value={filterPhone}
+              onChange={(e) => setFilterPhone(e.target.value)}
+            />
+            <input
+              type="date"
+              className="booking-page-filter-input"
+              value={filterDate}
+              onChange={(e) => setFilterDate(e.target.value)}
+            />
+            <select
+              className="booking-page-filter-select"
+              value={filterShift}
+              onChange={(e) => setFilterShift(e.target.value)}
+            >
+              <option value="">All shifts</option>
+              <option value="Day">Day</option>
+              <option value="Night">Night</option>
+              <option value="Full Day">Full Day</option>
+              <option value="Full Night">Full Night</option>
+            </select>
+            <select
+              className="booking-page-filter-select"
+              value={sortOrder}
+              onChange={(e) => setSortOrder(e.target.value)}
+            >
+              <option value="closest">Sort: Closest date</option>
+              <option value="farthest">Sort: Farthest date</option>
+            </select>
+            <button
+              className="booking-page-filter-clear"
+              onClick={() => { setFilterEmail(''); setFilterPhone(''); setFilterDate(''); setFilterShift(''); setSortOrder('closest'); }}
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Success/Error Messages */}
       {(actionSuccess || actionError) && (
         <div className="booking-page-messages">
@@ -455,7 +549,7 @@ const Bookings = () => {
               </thead>
               <tbody className="booking-page-table-body">
                 {filteredBookings.map((booking) => (
-                  <tr key={booking.booking_id} className="booking-page-table-row">
+                  <tr key={booking.booking_id} className="booking-page-table-row" onClick={() => setSelectedBooking(booking)} style={{ cursor: 'pointer' }}>
                     <td className="booking-page-table-td">
                       <span className="booking-page-booking-id-value">#{booking.booking_id}</span>
                     </td>
@@ -561,155 +655,43 @@ const Bookings = () => {
         )}
       </div>
 
-      {/* Add Booking Modal */}
-      {showAddModal && (
-        <div className="booking-page-modal-overlay" onClick={handleCloseModal}>
+      {/* Booking Details Modal */}
+      {selectedBooking && (
+        <div className="booking-page-modal-overlay" onClick={() => setSelectedBooking(null)}>
           <div className="booking-page-modal" onClick={(e) => e.stopPropagation()}>
             <div className="booking-page-modal-header">
-              <h2>Add New Booking</h2>
+              <h2>Booking Details</h2>
               <button 
                 className="booking-page-modal-close" 
-                onClick={handleCloseModal}
+                onClick={() => setSelectedBooking(null)}
                 aria-label="Close modal"
               >
                 ×
               </button>
             </div>
-
-            <form onSubmit={handleSubmit} className="booking-page-form">
-              {addBookingError && (
-                <div className="booking-page-form-error">
-                  {addBookingError}
+            <div className="booking-page-details-body">
+              <div className="booking-page-details-grid">
+                <div className="booking-page-details-item">
+                  <span className="booking-page-details-label">Name</span>
+                  <span className="booking-page-details-value">{selectedBooking.user_name || 'N/A'}</span>
                 </div>
-              )}
-
-              {addBookingSuccess && (
-                <div className="booking-page-form-success">
-                  {addBookingSuccess}
+                <div className="booking-page-details-item">
+                  <span className="booking-page-details-label">Email</span>
+                  <span className="booking-page-details-value">{selectedBooking.user_email || 'N/A'}</span>
                 </div>
-              )}
-
-              <div className="booking-page-form-group">
-                <label htmlFor="cnic" className="booking-page-form-label">
-                  CNIC Number <span className="booking-page-required">*</span>
-                </label>
-                <input
-                  type="text"
-                  id="cnic"
-                  name="cnic"
-                  value={formData.cnic}
-                  onChange={handleInputChange}
-                  placeholder="e.g., 12345-1234567-1 or 1234512345671"
-                  className="booking-page-form-input"
-                  required
-                />
-                <small className="booking-page-form-help">
-                  Enter 13 digits (with or without dashes)
-                </small>
+                <div className="booking-page-details-item">
+                  <span className="booking-page-details-label">CNIC</span>
+                  <span className="booking-page-details-value">{selectedBooking.user_cnic || 'N/A'}</span>
+                </div>
+                <div className="booking-page-details-item">
+                  <span className="booking-page-details-label">Phone</span>
+                  <span className="booking-page-details-value">{selectedBooking.user_phone_number || 'N/A'}</span>
+                </div>
               </div>
-
-              <div className="booking-page-form-group">
-                <label htmlFor="phone_no" className="booking-page-form-label">
-                  Phone Number <span className="booking-page-required">*</span>
-                </label>
-                <input
-                  type="tel"
-                  id="phone_no"
-                  name="phone_no"
-                  value={formData.phone_no}
-                  onChange={handleInputChange}
-                  placeholder="e.g., +923001234567"
-                  className="booking-page-form-input"
-                  required
-                />
-                <small className="booking-page-form-help">
-                  Enter 10-15 digits (optional + prefix)
-                </small>
+              <div className="booking-page-details-footer">
+                <button className="booking-page-back-button" onClick={() => setSelectedBooking(null)}>Close</button>
               </div>
-
-              <div className="booking-page-form-group">
-                <label htmlFor="booking_date" className="booking-page-form-label">
-                  Booking Date <span className="booking-page-required">*</span>
-                </label>
-                <input
-                  type="date"
-                  id="booking_date"
-                  name="booking_date"
-                  value={formData.booking_date}
-                  onChange={handleInputChange}
-                  className="booking-page-form-input"
-                  required
-                  min={new Date().toISOString().split('T')[0]}
-                />
-                <small className="booking-page-form-help">
-                  Select a future date
-                </small>
-              </div>
-
-              <div className="booking-page-form-group">
-                <label htmlFor="shift_type" className="booking-page-form-label">
-                  Shift Type <span className="booking-page-required">*</span>
-                </label>
-                <select
-                  id="shift_type"
-                  name="shift_type"
-                  value={formData.shift_type}
-                  onChange={handleInputChange}
-                  className="booking-page-form-select"
-                  required
-                >
-                  <option value="">Select shift type</option>
-                  <option value="Day">Day</option>
-                  <option value="Night">Night</option>
-                  <option value="Full Day">Full Day</option>
-                  <option value="Full Night">Full Night</option>
-                </select>
-              </div>
-
-              <div className="booking-page-form-group">
-                <label htmlFor="booking_source" className="booking-page-form-label">
-                  Booking Source <span className="booking-page-required">*</span>
-                </label>
-                <select
-                  id="booking_source"
-                  name="booking_source"
-                  value={formData.booking_source}
-                  onChange={handleInputChange}
-                  className="booking-page-form-select"
-                  required
-                >
-                  <option value="">Select booking source</option>
-                  <option value="Website">Website</option>
-                  <option value="WhatsApp Bot">WhatsApp Bot</option>
-                  <option value="Third-Party">Third-Party</option>
-                </select>
-              </div>
-
-              <div className="booking-page-form-actions">
-                <button
-                  type="button"
-                  onClick={handleCloseModal}
-                  className="booking-page-form-cancel"
-                  disabled={addBookingLoading}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="booking-page-form-submit"
-                  disabled={addBookingLoading}
-                >
-                  {addBookingLoading ? (
-                    <>
-                      <span className="booking-page-loading-dots"></span>
-                      Creating...
-                    </>
-                  ) : (
-                    'Create Booking'
-                  )}
-                </button>
-              </div>
-            </form>
+            </div>
           </div>
         </div>
       )}

@@ -344,7 +344,7 @@ export const viewPropertyBookings = async (req, res) => {
       include: [
         {
           model: User,
-          attributes: ['email'], // Changed from 'username' to 'email'
+          attributes: ['name', 'phone_number', 'cnic', 'email'], // Include name, phone_number, cnic, email
           required: false, // Make User include optional
         },
       ],
@@ -369,7 +369,10 @@ export const viewPropertyBookings = async (req, res) => {
       bookings: bookings.map(booking => ({
         booking_id: booking.booking_id,
         user_id: booking.user_id,
-        user_email: booking.User?.email || null, // Changed from 'username' to 'user_email'
+        user_name: booking.User?.name || null,
+        user_phone_number: booking.User?.phone_number || null,
+        user_cnic: booking.User?.cnic || null,
+        user_email: booking.User?.email || null,
         property_id: booking.property_id,
         booking_date: booking.booking_date,
         shift_type: booking.shift_type,
