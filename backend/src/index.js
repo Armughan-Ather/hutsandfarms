@@ -40,7 +40,7 @@ async function startServer() {
 
     // Sync all models except Message and Session
     const modelsToSync = Object.values(db).filter(model => 
-      model !== db.Message && model !== db.Session && model.getTableName
+      model !== db.Message && model !== db.Session &&model !== db.videoSent && model !== db.imageSent && model.getTableName
     );
     await Promise.all(modelsToSync.map(model => model.sync({ alter: true })));
     console.log('✅ Models synced with database (excluding Message and Session).');

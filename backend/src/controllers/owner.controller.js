@@ -169,3 +169,39 @@ export const loginOwner = async (req, res) => {
     res.status(500).json({ error: 'Failed to login owner', details: error.message });
   }
 };
+
+export const getOwnerProperties = async (req, res) => {
+  try {
+    // Get owner_id from middleware
+    const { owner_id } = req.owner;
+
+    // Validate owner_id
+    if (!owner_id) {
+      return res.status(401).json({ error: 'Owner ID not found in authentication data' });
+    }
+
+    // Fetch properties using raw MySQL query
+    const properties = await sequelize.query(
+      'SELECT p.property_id, p.name, p.location, p.type, p.username, p.created_at, p.updated_at ' +
+      'FROM properties p ' +
+      'INNER JOIN owner_properties op ON p.property_id = op.property_id ' +
+      'WHERE op.owner_id = ?',
+      {
+        replacements: [owner_id],
+        type: sequelize.QueryTypes.SELECT,
+      }
+    );
+
+    // Return response
+    res.status(200).json({
+      message: 'Properties retrieved successfully',
+      properties,
+    });
+  } catch (error) {
+    console.error('Error retrieving properties:', error);
+    res.status(500).json({
+      error: 'Failed to retrieve properties',
+      details: error.message,
+    });
+  }
+};
