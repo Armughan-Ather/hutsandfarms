@@ -529,10 +529,11 @@ const Bookings = () => {
         </div>
       )}
 
-      {/* Bookings Table */}
+      {/* Bookings Table (Desktop/Tablet) */}
       <div className="booking-page-content">
         {filteredBookings.length > 0 ? (
-          <div className="booking-page-table-container">
+          <>
+            <div className="booking-page-table-container">
             <table className="booking-page-table">
               <thead className="booking-page-table-header">
                 <tr>
@@ -640,6 +641,101 @@ const Bookings = () => {
               </tbody>
             </table>
           </div>
+            {/* Mobile List View */}
+            <div className="booking-page-mobile-list">
+            {filteredBookings.map((booking) => (
+              <div
+                key={booking.booking_id}
+                className="booking-page-mobile-card"
+                onClick={() => setSelectedBooking(booking)}
+              >
+                <div className="booking-page-mobile-row booking-page-mobile-top">
+                  <div className="booking-page-mobile-id">#{booking.booking_id}</div>
+                  <div
+                    className="booking-page-status-badge"
+                    style={{ backgroundColor: getStatusColor(booking.status) }}
+                  >
+                    {booking.status || 'Unknown'}
+                  </div>
+                </div>
+                <div className="booking-page-mobile-row">
+                  <div className="booking-page-mobile-label">Email</div>
+                  <div className="booking-page-mobile-value booking-page-customer-email">
+                    {booking.user_email || 'No email provided'}
+                  </div>
+                </div>
+                <div className="booking-page-mobile-row">
+                  <div className="booking-page-mobile-label">Date</div>
+                  <div className="booking-page-mobile-value">{formatDate(booking.booking_date)}</div>
+                </div>
+                <div className="booking-page-mobile-row">
+                  <div className="booking-page-mobile-label">Shift</div>
+                  <div
+                    className="booking-page-shift-type-badge"
+                    style={{ backgroundColor: getShiftTypeColor(booking.shift_type) }}
+                  >
+                    {booking.shift_type || 'Not specified'}
+                  </div>
+                </div>
+                <div className="booking-page-mobile-row">
+                  <div className="booking-page-mobile-label">Total</div>
+                  <div className="booking-page-mobile-value booking-page-cost">
+                    ${booking.total_cost?.toLocaleString() || '0'}
+                  </div>
+                </div>
+                <div className="booking-page-mobile-actions" onClick={(e) => e.stopPropagation()}>
+                  {booking.status?.toLowerCase() === 'pending' && (
+                    <>
+                      <button
+                        onClick={() => handleConfirmBooking(booking.booking_id)}
+                        disabled={actionLoading[booking.booking_id]}
+                        className="booking-page-confirm-button"
+                        title="Confirm Booking"
+                      >
+                        {actionLoading[booking.booking_id] ? (
+                          <span className="booking-page-loading-dots"></span>
+                        ) : (
+                          '✅'
+                        )}
+                      </button>
+                      <button
+                        onClick={() => handleCancelBooking(booking.booking_id)}
+                        disabled={actionLoading[booking.booking_id]}
+                        className="booking-page-cancel-button"
+                        title="Cancel Booking"
+                      >
+                        {actionLoading[booking.booking_id] ? (
+                          <span className="booking-page-loading-dots"></span>
+                        ) : (
+                          '❌'
+                        )}
+                      </button>
+                    </>
+                  )}
+                  {booking.status?.toLowerCase() === 'confirmed' && (
+                    <button
+                      onClick={() => handleCancelBooking(booking.booking_id)}
+                      disabled={actionLoading[booking.booking_id]}
+                      className="booking-page-cancel-button"
+                      title="Cancel Booking"
+                    >
+                      {actionLoading[booking.booking_id] ? (
+                        <span className="booking-page-loading-dots"></span>
+                      ) : (
+                        '❌'
+                      )}
+                    </button>
+                  )}
+                  {(booking.status?.toLowerCase() === 'completed' || booking.status?.toLowerCase() === 'cancelled') && (
+                    <span className="booking-page-status-text">
+                      {booking.status?.toLowerCase() === 'completed' ? '✅ Completed' : '❌ Cancelled'}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+            </div>
+          </>
         ) : (
           <div className="booking-page-no-bookings">
             <div className="booking-page-no-data-content">
